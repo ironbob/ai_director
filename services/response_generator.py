@@ -1,7 +1,7 @@
 from datetime import datetime
 import random
 from config import Config
-from schemas import MessageType
+from schemas import MessageType,LiveEvent
 
 class ResponseGenerator:
     WELCOME_TEMPLATES = [
@@ -27,6 +27,12 @@ class ResponseGenerator:
         "新来的宝宝点个关注，马上抽奖啦！",
         "有没有想了解的产品？扣1我详细讲解！"
     ]
+
+    def generate_interaction_response(event:LiveEvent) -> str:
+        return f"感谢{event.user_id}的互动，主播会继续努力哒！"
+    
+    def generate_follow_thanks(followers:list) -> str:
+        return f"感谢{followers}的关注，爱你们哟～"
 
     @classmethod
     def generate_group_response(cls, event_type: MessageType, users: list) -> str:

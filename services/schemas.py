@@ -13,4 +13,5 @@ class MessageType(str, Enum):
 class LiveEvent(BaseModel):
     type: MessageType      # 必须是指定的枚举值
     user_id: str           # 必须是字符串
+    event_time: datetime   # 事件发生时间
     data: dict = {}        # 可选字段，默认为空字典
