@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form class="row g-2" method="get">
+            <div class="col-auto">
+                <input type="text" class="form-control" name="username" 
+                       value="{{ username }}" placeholder="输入用户名">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">查询</button>
+            </div>
+        </form>
+    </div>
+    {% if username %}
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('main.create_app', username=username) }}" class="btn btn-success">
+            新建应用
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% if username %}
+    {% if apps %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for app in apps %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ app.app_name }}</h5>
+                    <p class="card-text text-muted">用户: {{ app.username }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            创建于 {{ app.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ url_for('main.app_detail', app_id=app.id) }}" 
+                       class="btn btn-sm btn-primary">查看详情</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        当前用户没有应用，点击"新建应用"按钮创建一个吧！
+    </div>
+    {% endif %}
+{% else %}
+<div class="alert alert-secondary">
+    请输入用户名查询或创建应用
+</div>
+{% endif %}
+{% endblock %}

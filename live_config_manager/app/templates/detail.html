@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ app.app_name }}</h1>
+    <a href="{{ url_for('main.index', username=app.username) }}" class="btn btn-outline-secondary">
+        返回
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">基本信息</h5>
+        <p class="card-text">用户: {{ app.username }}</p>
+        <p class="card-text">创建时间: {{ app.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        <a href="{{ url_for('main.get_app_config', app_id=app.id) }}" 
+           class="btn btn-sm btn-outline-primary" target="_blank">
+            API链接
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">配置内容</h5>
+    </div>
+    <div class="card-body">
+        {% if config_content %}
+        <pre>{{ config_content | tojson(indent=4) }}</pre>
+        {% else %}
+        <div class="alert alert-warning">
+            此应用没有配置文件
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">新建应用 - {{ username }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="app_name" class="form-label">应用名称</label>
+                        <input type="text" class="form-control" id="app_name" name="app_name" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="config_file" class="form-label">配置文件(JSON)</label>
+                        <input class="form-control" type="file" id="config_file" name="config_file" accept=".json">
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">创建</button>
+                        <a href="{{ url_for('main.index', username=username) }}" class="btn btn-secondary">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
