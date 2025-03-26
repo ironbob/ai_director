@@ -26,11 +26,6 @@ class LiveEvent(BaseModel):
 class ResponseMessage:
     def __init__(self, events: List[LiveEvent], content:str):
         self.events = events
-class ProcessedMessage:
-    def __init__(self, message:LiveEvent, response=None):
-        self.message = message
-        self.response = response
-        self.processed_at = datetime.now()
 
 class PlatformState:
     def __init__(self,platform):
