@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, current_app,send_from_directory, abort,send_file
-from app.models import SimpleApp
+from app.models import SimpleApp,MessageType,UserEnterMessage,UserFollowMessage,UserMessage,UserGiftMessage,UserOrderMessage,BaseMessage
 from app import db
 import os
 import uuid
@@ -9,8 +9,18 @@ from app import db
 import os
 import uuid
 import json
+from typing import Dict
+from app.LiveChatBot import LiveChatBot 
+from threading import Lock
+from flask_socketio import socketio
+import time
+from threading import Thread
+from flask import jsonify
 
 bp = Blueprint('main', __name__)
+# 内存存储
+live_bots: Dict[str, LiveChatBot] = {}
+bot_lock = Lock()
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
 
@@ -111,3 +121,98 @@ def get_app_config(app_id):
     if config_content is None:
         return {'error': 'Config not found'}, 404
     return config_content
+
+def get_or_create_bot(app_id: str) -> LiveChatBot:
+    with bot_lock:
+        if app_id not in live_bots:
+            live_bots[app_id] = LiveChatBot(app_id)
+        return live_bots[app_id]
+
+# 启动消息处理器线程
+def start_message_processor():
+    def processor():
+        while True:
+            with bot_lock:
+                for bot in live_bots.values():
+                    responses = bot.process_messages()
+                    if responses:
+                        socketio.emit('bot_response', {
+                            'app_id': bot.app_id,
+                            'messages': responses
+                        }, room=f'app_{bot.app_id}')
+            
+            time.sleep(1)  # 每秒检查一次
+    
+    thread = Thread(target=processor)
+    thread.daemon = True
+    thread.start()
+
+def handle_live_message_common(app_id: str, message_type: MessageType, data: dict):
+    bot = get_or_create_bot(app_id)
+    
+    # 创建对应的消息对象
+    if message_type == MessageType.USER_ENTER:
+        message = UserEnterMessage(data['username'])
+    elif message_type == MessageType.USER_FOLLOW:
+        message = UserFollowMessage(data['username'])
+    elif message_type == MessageType.USER_MESSAGE:
+        message = UserMessage(data['username'], data['content'])
+    elif message_type == MessageType.USER_GIFT:
+        message = UserGiftMessage(
+            username=data['username'],
+            gift_name=data['gift_name'],
+            gift_value=data.get('gift_value', 0)  # 默认值
+        )
+    elif message_type == MessageType.USER_ORDER:
+        message = UserOrderMessage(
+            username=data['username'],
+            product_name=data['product_name'],
+            amount=data.get('amount', 0)  # 默认值
+        )
+    else:
+        return False
+        
+    bot.add_message(message)
+    return True
+
+# WebSocket消息处理 (保持原有)
+@socketio.on('live_message')
+def handle_live_message(data):
+    try:
+        message_type = MessageType(data['type'])
+        if handle_live_message_common(data['app_id'], message_type, data):
+            return {'status': 'success'}
+        return {'status': 'error', 'message': 'Invalid message type'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
+# 新增HTTP消息接口
+@bp.route('/api/message', methods=['POST'])
+def http_handle_message():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            
+        # 验证必要字段
+        required_fields = ['app_id', 'type', 'username']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'status': 'error', 'message': f'Missing field: {field}'}), 400
+        
+        message_type = MessageType(data['type'])
+        if handle_live_message_common(data['app_id'], message_type, data):
+            return jsonify({'status': 'success'})
+        return jsonify({'status': 'error', 'message': 'Invalid message type'}), 400
+    except ValueError as e:
+        return jsonify({'status': 'error', 'message': f'Invalid message type: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# 获取历史消息
+@bp.route('/api/bot/<app_id>/history', methods=['GET'])
+def get_history(app_id):
+    bot = get_or_create_bot(app_id)
+    return jsonify({
+        'history': [msg.to_dict() for msg in bot.message_history[-20:]]
+    })
