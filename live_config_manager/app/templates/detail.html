@@ -25,13 +25,29 @@
         <h5 class="mb-0">配置内容</h5>
     </div>
     <div class="card-body">
-        {% if config_content %}
-        <pre>{{ config_content | tojson(indent=4) }}</pre>
-        {% else %}
-        <div class="alert alert-warning">
-            此应用没有配置文件
+        <div class="config-content">
+            {% if config_content %}
+                {% if config_content is mapping %}  {# 如果是字典/JSON 对象 #}
+                    <h4>配置详情：</h4>
+                    <pre>{{ config_content | tojson(indent=4) }}</pre>
+                {% else %}
+                    <h4>配置内容：</h4>
+                    <pre>{{ config_content }}</pre>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    此应用没有配置文件
+                </div>
+            {% endif %}
+            
+            {# 额外的下载链接 #}
+            {% if app.config_filename %}
+                <a href="{{ url_for('main.download_config', app_id=app.id) }}" 
+                   class="btn btn-sm btn-outline-secondary mt-2">
+                    下载配置文件
+                </a>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
