@@ -2,3 +2,4 @@ Flask
 Flask-SQLAlchemy
 python-dotenv
 flask_socketio
+durable_rules
